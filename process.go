@@ -13,12 +13,12 @@ import "runtime"
 // To start a process, use (*Simulation).Process or
 // (*Simulation).ProcessReflect:
 //
-//     func myProcess (proc simgo.Process) {
-//         fmt.Println("Start")
-//         proc.Wait(proc.Timeout(5))
-//         fmt.Println("End")
-//     }
-//     sim.Process(myProcess)
+//	func myProcess (proc simgo.Process) {
+//	    fmt.Println("Start")
+//	    proc.Wait(proc.Timeout(5))
+//	    fmt.Println("End")
+//	}
+//	sim.Process(myProcess)
 //
 // Process encapsulates *Simulation, so all its methods can be used.
 type Process struct {
@@ -73,12 +73,15 @@ func (proc Process) Wait(ev Awaitable) {
 	// yield to simulation
 	proc.sync <- true
 
-	// wait for simulation
-	processed := <-proc.sync
+	select {
+	case processed := <-proc.sync: // wait for simulation
+		if !processed {
+			// event aborted, abort process
+			proc.ev.Abort()
+			runtime.Goexit()
+		}
 
-	if !processed {
-		// event aborted, abort process
-		proc.ev.Abort()
+	case <-proc.shutdown: // wait for simulation shutdown
 		runtime.Goexit()
 	}
 }

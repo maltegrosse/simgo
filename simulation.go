@@ -29,6 +29,13 @@ type Simulation struct {
 	nextID uint64
 
 	m sync.Mutex
+
+	// shutdown is used to shutdown all process goroutines of this simulation.
+	shutdown chan struct{}
+}
+// NewSimulation creates a new simulation.
+func NewSimulation() *Simulation {
+	return &Simulation{shutdown: make(chan struct{})}
 }
 
 // Now returns the current simulation time.
@@ -227,7 +234,10 @@ func (sim *Simulation) RunUntil(target float64) {
 
 	sim.now = target
 }
-
+// Shutdown shuts down all process goroutines of this simulation.
+func (sim *Simulation) Shutdown() {
+	close(sim.shutdown)
+}
 // schedule schedules the given event to be processed after the given delay.
 // Adds the event to the event queue.
 func (sim *Simulation) schedule(ev *Event, delay float64) {
