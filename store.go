@@ -109,3 +109,16 @@ func (st *Store) triggerPuts(triggerGets bool) {
 		}
 	}
 }
+func (st *Store) AbortAllPendingGets() {
+	st.m.Lock()
+	defer st.m.Unlock()
+
+	for _, ev := range st.gets {
+		if !ev.Aborted() && !ev.Processed() {
+			ev.Abort()
+		}
+	}
+
+	// Optional: clear the slice so they aren't triggered again later
+	st.gets = nil
+}
